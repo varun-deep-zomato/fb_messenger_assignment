@@ -36,30 +36,57 @@ def wait_for_cassandra():
 def create_keyspace(session):
     """
     Create the keyspace if it doesn't exist.
-    
-    This is where students will define the keyspace configuration.
     """
     logger.info(f"Creating keyspace {CASSANDRA_KEYSPACE} if it doesn't exist...")
-    
-    # TODO: Students should implement keyspace creation
-    # Hint: Consider replication strategy and factor for a distributed database
-    
+    query = f"""
+    CREATE KEYSPACE IF NOT EXISTS {CASSANDRA_KEYSPACE}
+    WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': '1'}}
+    """
+    session.execute(query)
     logger.info(f"Keyspace {CASSANDRA_KEYSPACE} is ready.")
 
 def create_tables(session):
     """
     Create the tables for the application.
-    
-    This is where students will define the table schemas based on the requirements.
     """
     logger.info("Creating tables...")
-    
-    # TODO: Students should implement table creation
-    # Hint: Consider:
-    # - What tables are needed to implement the required APIs?
-    # - What should be the primary keys and clustering columns?
-    # - How will you handle pagination and time-based queries?
-    
+    # Users table (for test data completeness)
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id uuid PRIMARY KEY,
+            username text
+        )
+    """)
+    # Conversations by user
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS conversations_by_user (
+            user_id uuid,
+            conversation_id uuid,
+            other_user_id uuid,
+            last_message text,
+            last_updated timestamp,
+            PRIMARY KEY (user_id, conversation_id)
+        ) WITH CLUSTERING ORDER BY (conversation_id DESC)
+    """)
+    # Messages by conversation
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS messages_by_conversation (
+            conversation_id uuid,
+            message_id timeuuid,
+            sender_id uuid,
+            receiver_id uuid,
+            content text,
+            created_at timestamp,
+            PRIMARY KEY (conversation_id, message_id)
+        ) WITH CLUSTERING ORDER BY (message_id DESC)
+    """)
+    # Conversation metadata
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS conversation_metadata (
+            conversation_id uuid PRIMARY KEY,
+            created_at timestamp
+        )
+    """)
     logger.info("Tables created successfully.")
 
 def main():

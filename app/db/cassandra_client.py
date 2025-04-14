@@ -7,6 +7,7 @@ import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
+import time
 
 from cassandra.cluster import Cluster, Session
 from cassandra.auth import PlainTextAuthProvider
@@ -41,15 +42,18 @@ class CassandraClient:
         self._initialized = True
     
     def connect(self) -> None:
-        """Connect to the Cassandra cluster."""
-        try:
-            self.cluster = Cluster([self.host])
-            self.session = self.cluster.connect(self.keyspace)
-            self.session.row_factory = dict_factory
-            logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
-        except Exception as e:
-            logger.error(f"Failed to connect to Cassandra: {str(e)}")
-            raise
+        retries = 10
+        for attempt in range(retries):
+            try:
+                self.cluster = Cluster([self.host])
+                self.session = self.cluster.connect(self.keyspace)
+                self.session.row_factory = dict_factory
+                logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
+                return
+            except Exception as e:
+                logger.error(f"Failed to connect to Cassandra (attempt {attempt+1}/{retries}): {str(e)}")
+                time.sleep(5)
+        raise Exception("Failed to connect to Cassandra after multiple attempts")
     
     def close(self) -> None:
         """Close the Cassandra connection."""
@@ -68,15 +72,19 @@ class CassandraClient:
         Returns:
             List of rows as dictionaries
         """
+        logger.info(f"[DB] Executing query: {query}")
+        logger.info(f"[DB] Params: {params}")
         if not self.session:
             self.connect()
         
         try:
             statement = SimpleStatement(query)
             result = self.session.execute(statement, params or {})
-            return list(result)
+            result_list = list(result)
+            logger.info(f"[DB] Query executed successfully. Returned {len(result_list)} rows")
+            return result_list
         except Exception as e:
-            logger.error(f"Query execution failed: {str(e)}")
+            logger.error(f"[DB] Exception during execute: {e}")
             raise
     
     def execute_async(self, query: str, params: dict = None):

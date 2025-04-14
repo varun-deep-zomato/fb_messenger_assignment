@@ -5,7 +5,7 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"
+      - "6969:6969"
     volumes:
       - .:/app
     depends_on:
@@ -13,7 +13,7 @@ services:
     environment:
       - CASSANDRA_HOST=cassandra
       - CASSANDRA_KEYSPACE=messenger
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 6969 --reload
   
   # Cassandra database
   cassandra:

@@ -40,9 +40,8 @@ def get_conversation_controller():
     """Dependency for conversation controller."""
     return ConversationController()
 
-# Update the routes with the dependencies
-message_router.dependency_overrides[MessageController] = get_message_controller
-conversation_router.dependency_overrides[ConversationController] = get_conversation_controller
+app.dependency_overrides[MessageController] = get_message_controller
+app.dependency_overrides[ConversationController] = get_conversation_controller
 
 # Include routers
 app.include_router(message_router)
@@ -72,4 +71,4 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("app.main:app", host="0.0.0.0", port=6969, reload=True) 
