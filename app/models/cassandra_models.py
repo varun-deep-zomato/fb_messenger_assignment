@@ -3,10 +3,10 @@ Sample models for interacting with Cassandra tables.
 Students should implement these models based on their database schema design.
 """
 import uuid
-from datetime import datetime
-from typing import List, Dict, Any, Optional
+from datetime import *
 import logging
 
+from app.util.util import generate_conversation_id
 from app.db.cassandra_client import cassandra_client
 
 logger = logging.getLogger(__name__)
@@ -28,13 +28,10 @@ class MessageModel:
         """
         Create a new message and update conversations_by_user for both participants.
         """
-        from datetime import datetime
-        import uuid
-        from app.db.cassandra_client import cassandra_client
 
         # Generate message_id as timeuuid
         message_id = uuid.uuid1()
-        created_at = datetime.now(datetime.timezone.utc)
+        created_at = datetime.now(timezone.utc)
         # Insert into messages_by_conversation
         insert_query = (
             "INSERT INTO messages_by_conversation (conversation_id, message_id, sender_id, receiver_id, content, created_at) "
@@ -82,7 +79,7 @@ class MessageModel:
             pass  # Ignore if already exists
 
         return {
-            'id': str(message_id),
+            'message_id': str(message_id),
             'conversation_id': conversation_id,
             'sender_id': sender_id,
             'receiver_id': receiver_id,
@@ -95,8 +92,6 @@ class MessageModel:
         """
         Get messages for a conversation with stateless, cursor-based pagination (latest first), using last_message_id for paging.
         """
-        from app.db.cassandra_client import cassandra_client
-        import uuid
         logger.info(f"[Model] Fetching messages for conversation_id={conversation_id}, limit={limit}, last_message_id={last_message_id}")
         if last_message_id:
             query = (
@@ -123,15 +118,13 @@ class MessageModel:
             logger.info(f"[Model] First row: {rows[0]}")
         else:
             logger.info("[Model] No rows returned")
-        return [{'id': str(row['message_id']), 'conversation_id': conversation_id, 'sender_id': str(row['sender_id']), 'receiver_id': str(row['receiver_id']), 'content': row['content'], 'created_at': row['created_at']} for row in rows]
+        return [{'message_id': str(row['message_id']), 'conversation_id': conversation_id, 'sender_id': str(row['sender_id']), 'receiver_id': str(row['receiver_id']), 'content': row['content'], 'created_at': row['created_at']} for row in rows]
 
     @staticmethod
     async def get_messages_before_message_id(conversation_id: str, before_message_id: str, page: int = 1, limit: int = 20):
         """
         Get messages before a specific message_id (timeuuid) with pagination.
         """
-        from app.db.cassandra_client import cassandra_client
-        import uuid
         offset = (page - 1) * limit
         query = (
             "SELECT * FROM messages_by_conversation WHERE conversation_id = %(conversation_id)s AND message_id < %(before_message_id)s ORDER BY message_id DESC LIMIT %(fetch_count)s"
@@ -143,7 +136,7 @@ class MessageModel:
         }
         rows = cassandra_client.execute(query, params)
         page_rows = rows[offset:offset+limit]
-        return [{'id': str(row['message_id']), 'conversation_id': conversation_id, 'sender_id': str(row['sender_id']), 'receiver_id': str(row['receiver_id']), 'content': row['content'], 'created_at': row['created_at']} for row in page_rows]
+        return [{'message_id': str(row['message_id']), 'conversation_id': conversation_id, 'sender_id': str(row['sender_id']), 'receiver_id': str(row['receiver_id']), 'content': row['content'], 'created_at': row['created_at']} for row in page_rows]
 
 
 class ConversationModel:
@@ -163,8 +156,6 @@ class ConversationModel:
         """
         Get conversations for a user with stateless, cursor-based pagination (using before_conversation_id as cursor).
         """
-        from app.db.cassandra_client import cassandra_client
-        import uuid
         if before_conversation_id:
             query = (
                 "SELECT * FROM conversations_by_user WHERE user_id = %(user_id)s AND conversation_id < %(before_conversation_id)s ORDER BY conversation_id DESC LIMIT %(limit)s"
@@ -190,8 +181,6 @@ class ConversationModel:
         """
         Get a conversation by ID from conversation_metadata.
         """
-        from app.db.cassandra_client import cassandra_client
-        import uuid
         query = "SELECT * FROM conversation_metadata WHERE conversation_id = %(conversation_id)s"
         params = {'conversation_id': uuid.UUID(conversation_id)}
         rows = cassandra_client.execute(query, params)
@@ -205,10 +194,6 @@ class ConversationModel:
         """
         Get an existing conversation between two users or create a new one using a deterministic conversation_id.
         """
-        from app.util.util import generate_conversation_id
-        from datetime import datetime
-        from app.db.cassandra_client import cassandra_client
-        import uuid
         conversation_id = generate_conversation_id(user1_id, user2_id)
         # Check if conversation exists
         query = "SELECT * FROM conversation_metadata WHERE conversation_id = %(conversation_id)s"
@@ -217,7 +202,7 @@ class ConversationModel:
         if rows:
             return {'conversation_id': conversation_id, 'created_at': rows[0].get('created_at')}
         # If not exists, create
-        created_at = datetime.now(datetime.timezone.utc)
+        created_at = datetime.now(timezone.utc)
         meta_query = (
             "INSERT INTO conversation_metadata (conversation_id, created_at) VALUES (%(conversation_id)s, %(created_at)s) IF NOT EXISTS"
         )

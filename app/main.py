@@ -60,7 +60,7 @@ async def startup_event():
         cassandra_client.get_session()
         logger.info("Cassandra connection established")
     except Exception as e:
-        logger.error(f"Failed to connect to Cassandra: {str(e)}")
+        logger.exception("Failed to connect to Cassandra")
         sys.exit(1)
 
 @app.on_event("shutdown")

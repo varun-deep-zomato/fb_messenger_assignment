@@ -1,4 +1,5 @@
 from hashlib import sha256
+import uuid
 
 def generate_conversation_id(user1_id: str, user2_id: str) -> str:
     sorted_ids = sorted([user1_id, user2_id])

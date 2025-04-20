@@ -10,7 +10,7 @@ class MessageCreate(MessageBase):
     receiver_id: str = Field(..., description="ID of the receiver")
 
 class MessageResponse(MessageBase):
-    id: str = Field(..., description="Unique ID of the message (timeuuid)")
+    message_id: str = Field(..., description="Unique ID of the message (timeuuid)")
     sender_id: str = Field(..., description="ID of the sender (uuid)")
     receiver_id: str = Field(..., description="ID of the receiver (uuid)")
     created_at: datetime = Field(..., description="Timestamp when message was created")

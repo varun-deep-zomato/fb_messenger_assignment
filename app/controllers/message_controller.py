@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
 import logging
+import uuid
 
 from app.schemas.message import MessageCreate, MessageResponse, PaginatedMessageResponse
 from app.models.cassandra_models import MessageModel, ConversationModel
@@ -15,9 +16,10 @@ class MessageController:
     """
     
     def parse_messages(self, messages):
+        messages = list(messages)
         return [
             MessageResponse(
-                id=m['id'],
+                message_id=m['message_id'],
                 sender_id=m['sender_id'],
                 receiver_id=m['receiver_id'],
                 content=m['content'],
@@ -41,7 +43,7 @@ class MessageController:
                 content=message_data.content
             )
             return MessageResponse(
-                id=str(result['id']),
+                message_id=str(result['message_id']),
                 sender_id=str(result['sender_id']),
                 receiver_id=str(result['receiver_id']),
                 content=result['content'],
@@ -49,6 +51,7 @@ class MessageController:
                 conversation_id=str(result['conversation_id'])
             )
         except Exception as e:
+            logger.exception("[Controller] Exception occurred in send_message")
             raise HTTPException(status_code=500, detail=str(e))
 
     async def get_conversation_messages(
@@ -69,7 +72,7 @@ class MessageController:
             )
             logger.info(f"[Controller] Retrieved {len(messages)} messages from model")
             data = self.parse_messages(messages)
-            next_cursor = messages[-1]['id'] if messages else None
+            next_cursor = messages[-1]['message_id'] if messages else None
             logger.info(f"[Controller] Returning {len(data)} parsed messages, next_cursor={next_cursor}")
             return PaginatedMessageResponse(
                 total=len(data),
@@ -78,7 +81,7 @@ class MessageController:
                 next_cursor=next_cursor
             )
         except Exception as e:
-            logger.error(f"[Controller] Exception: {e}")
+            logger.exception("[Controller] Exception occurred in get_conversation_messages")
             raise HTTPException(status_code=500, detail=str(e))
 
     async def get_messages_before_timestamp(
@@ -97,7 +100,7 @@ class MessageController:
                 last_message_id=before_message_id
             )
             data = self.parse_messages(messages)
-            next_cursor = messages[-1]['id'] if messages else None
+            next_cursor = messages[-1]['message_id'] if messages else None
             return PaginatedMessageResponse(
                 total=len(data),
                 limit=limit,
@@ -105,4 +108,5 @@ class MessageController:
                 next_cursor=next_cursor
             )
         except Exception as e:
+            logger.exception("[Controller] Exception occurred in get_messages_before_timestamp")
             raise HTTPException(status_code=500, detail=str(e))

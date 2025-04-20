@@ -51,7 +51,7 @@ class CassandraClient:
                 logger.info(f"Connected to Cassandra at {self.host}:{self.port}, keyspace: {self.keyspace}")
                 return
             except Exception as e:
-                logger.error(f"Failed to connect to Cassandra (attempt {attempt+1}/{retries}): {str(e)}")
+                logger.exception(f"Failed to connect to Cassandra (attempt {attempt+1}/{retries})")
                 time.sleep(5)
         raise Exception("Failed to connect to Cassandra after multiple attempts")
     
@@ -84,7 +84,7 @@ class CassandraClient:
             logger.info(f"[DB] Query executed successfully. Returned {len(result_list)} rows")
             return result_list
         except Exception as e:
-            logger.error(f"[DB] Exception during execute: {e}")
+            logger.exception(f"[DB] Exception during execute")
             raise
     
     def execute_async(self, query: str, params: dict = None):
@@ -105,7 +105,7 @@ class CassandraClient:
             statement = SimpleStatement(query)
             return self.session.execute_async(statement, params or {})
         except Exception as e:
-            logger.error(f"Async query execution failed: {str(e)}")
+            logger.exception("Async query execution failed")
             raise
     
     def get_session(self) -> Session:
