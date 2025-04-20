@@ -4,6 +4,8 @@
 This document describes the data model, API schema, and design decisions for the FastAPI Messenger application using Cassandra as the backend. It also explains why each table and structure was chosen, and how they support robust, scalable messaging with efficient querying and pagination.
 
 ---
+## NOTE : 
+the tests will only run successfully once since the conversation id is written by message and the next time it runs it will have more messages than the previous run and hence the assertion will fail
 
 ## Cassandra Data Model
 
